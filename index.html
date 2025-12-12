@@ -5,65 +5,112 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>视频播放列表</title>
     <style>
+        :root {
+            --primary-color: #2563eb;
+            --hover-color: #eff6ff;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --border-color: #e2e8f0;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             margin: 0;
-            padding: 20px;
-            background-color: #f5f5f5;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
             display: flex;
             flex-direction: column;
-            height: 100vh;
-            box-sizing: border-box;
+        }
+
+        header {
+            background: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            z-index: 10;
         }
 
         h1 {
-            text-align: center;
-            margin-bottom: 20px;
-            color: #333;
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
         .container {
             display: flex;
             flex: 1;
-            gap: 20px;
-            max-width: 1200px;
+            max-width: 1600px;
             margin: 0 auto;
             width: 100%;
-            overflow: hidden; /* 防止溢出 */
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+            padding: 20px;
+            box-sizing: border-box;
+            gap: 20px;
         }
 
-        .video-section {
-            flex: 2;
-            padding: 20px;
+        .video-wrapper {
+            flex: 3;
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            background-color: #000;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            height: fit-content;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            background: #000; /* 仅视频区域保留黑色背景以防黑边 */
+            aspect-ratio: 16/9;
         }
 
         video {
             width: 100%;
-            max-height: 100%;
-            border-radius: 4px;
+            height: 100%;
+            display: block;
             outline: none;
         }
 
-        .list-section {
+        .video-info {
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        #current-video-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-color);
+            margin: 0;
+        }
+
+        .playlist-wrapper {
             flex: 1;
-            border-left: 1px solid #eee;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            min-width: 300px;
+            max-width: 400px;
         }
 
-        .list-header {
-            padding: 15px;
-            background-color: #f8f9fa;
-            border-bottom: 1px solid #eee;
-            font-weight: bold;
+        .playlist-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+            background: white;
+            color: #64748b;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
         #video-list {
@@ -75,79 +122,113 @@
         }
 
         .video-item {
-            padding: 12px 15px;
+            padding: 12px 20px;
             cursor: pointer;
-            border-bottom: 1px solid #f0f0f0;
-            transition: background-color 0.2s;
+            border-bottom: 1px solid var(--border-color);
+            transition: all 0.2s ease;
             display: flex;
             align-items: center;
+            gap: 12px;
+            font-size: 0.95rem;
         }
 
         .video-item:hover {
-            background-color: #f0f8ff;
+            background-color: var(--hover-color);
         }
 
         .video-item.active {
-            background-color: #e6f7ff;
-            color: #1890ff;
-            border-left: 3px solid #1890ff;
+            background-color: var(--hover-color);
+            color: var(--primary-color);
+            font-weight: 500;
+            border-left: 3px solid var(--primary-color);
         }
 
         .video-item .icon {
-            margin-right: 10px;
+            opacity: 0.5;
+        }
+        
+        .video-item.active .icon {
+            opacity: 1;
         }
 
-        #current-video-title {
-            color: #fff;
-            margin-top: 10px;
-            font-size: 1.1em;
-            text-align: center;
+        /* 滚动条美化 */
+        #video-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        #video-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        #video-list::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 3px;
         }
 
         /* 移动端适配 */
-        @media (max-width: 768px) {
+        @media (max-width: 1024px) {
             .container {
                 flex-direction: column;
-                overflow: auto; /* 允许整体滚动 */
+                padding: 0;
+                gap: 0;
             }
             
-            .video-section {
-                flex: none; /* 让视频区域自适应内容 */
+            .video-wrapper {
+                border-radius: 0;
+                box-shadow: none;
+                flex: none;
             }
 
-            .list-section {
+            .playlist-wrapper {
                 flex: 1;
-                border-left: none;
-                border-top: 1px solid #eee;
-                max-height: 500px; /* 限制列表高度 */
+                border-radius: 0;
+                box-shadow: none;
+                max-width: none;
+                border-top: 1px solid var(--border-color);
             }
             
-            body {
-                height: auto;
-                min-height: 100vh;
+            header {
+                padding: 1rem;
             }
         }
     </style>
 </head>
 <body>
 
-    <h1>生物信息学-研究生课程</h1>
+    <header>
+        <h1>
+            <span style="font-size: 1.5em;">📺</span> 
+            生物信息学-研究生课程
+        </h1>
+    </header>
 
     <div class="container">
-        <div class="video-section">
-            <video id="main-player" controls playsinline>
-                <p>您的浏览器不支持 HTML5 视频。</p>
-            </video>
-            <div id="current-video-title">请选择视频播放</div>
+        <div class="video-wrapper">
+            <div class="video-container">
+                <video id="main-player" controls playsinline>
+                    <p>您的浏览器不支持 HTML5 视频。</p>
+                </video>
+            </div>
+            <div class="video-info">
+                <h2 id="current-video-title">请选择视频播放</h2>
+            </div>
         </div>
-        <div class="list-section">
-            <div class="list-header">视频列表</div>
+        
+        <div class="playlist-wrapper">
+            <div class="playlist-header">课程列表</div>
             <ul id="video-list">
                 <!-- 列表项将由 JS 动态生成 -->
-                <li style="padding: 15px; color: #666;">正在加载视频列表...</li>
+                <li style="padding: 20px; text-align: center; color: #64748b;">正在加载...</li>
             </ul>
         </div>
     </div>
+
+    <footer style="text-align: center; padding: 20px; color: #94a3b8; font-size: 0.875rem;">
+        &copy; <span id="year"></span> 南方医科大学 基础医学院 余光创教授主讲，版权所有。
+    </footer>
+    <script>
+        document.getElementById('year').textContent = new Date().getFullYear();
+    </script>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -155,6 +236,33 @@
             const player = document.getElementById('main-player');
             const titleDisplay = document.getElementById('current-video-title');
             
+            // 布局调整函数：保持右侧列表高度与左侧视频一致
+            function adjustLayout() {
+                const videoWrapper = document.querySelector('.video-wrapper');
+                const playlistWrapper = document.querySelector('.playlist-wrapper');
+                
+                // 仅在桌面端（宽屏）且两个元素都存在时执行
+                if (window.innerWidth > 1024 && videoWrapper && playlistWrapper) {
+                    // 获取视频模块的自然高度
+                    const height = videoWrapper.offsetHeight;
+                    if (height > 0) {
+                        playlistWrapper.style.height = height + 'px';
+                    }
+                } else {
+                    // 移动端或小屏恢复默认
+                    if (playlistWrapper) {
+                        playlistWrapper.style.height = 'auto';
+                    }
+                }
+            }
+
+            // 监听窗口大小变化
+            window.addEventListener('resize', adjustLayout);
+            // 监听视频元数据加载（可能影响宽高比，虽然CSS已定）
+            player.addEventListener('loadedmetadata', adjustLayout);
+            // 初始执行一次
+            setTimeout(adjustLayout, 100);
+
             // 加载 JSON 数据
             fetch('videos.json')
                 .then(response => {
