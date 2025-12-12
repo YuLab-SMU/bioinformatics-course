@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>视频播放列表</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .container {
+            display: flex;
+            flex: 1;
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+            overflow: hidden; /* 防止溢出 */
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .video-section {
+            flex: 2;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            background-color: #000;
+        }
+
+        video {
+            width: 100%;
+            max-height: 100%;
+            border-radius: 4px;
+            outline: none;
+        }
+
+        .list-section {
+            flex: 1;
+            border-left: 1px solid #eee;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .list-header {
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #eee;
+            font-weight: bold;
+        }
+
+        #video-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .video-item {
+            padding: 12px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+        }
+
+        .video-item:hover {
+            background-color: #f0f8ff;
+        }
+
+        .video-item.active {
+            background-color: #e6f7ff;
+            color: #1890ff;
+            border-left: 3px solid #1890ff;
+        }
+
+        .video-item .icon {
+            margin-right: 10px;
+        }
+
+        #current-video-title {
+            color: #fff;
+            margin-top: 10px;
+            font-size: 1.1em;
+            text-align: center;
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+                overflow: auto; /* 允许整体滚动 */
+            }
+            
+            .video-section {
+                flex: none; /* 让视频区域自适应内容 */
+            }
+
+            .list-section {
+                flex: 1;
+                border-left: none;
+                border-top: 1px solid #eee;
+                max-height: 500px; /* 限制列表高度 */
+            }
+            
+            body {
+                height: auto;
+                min-height: 100vh;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>生物信息学-研究生课程</h1>
+
+    <div class="container">
+        <div class="video-section">
+            <video id="main-player" controls playsinline>
+                <p>您的浏览器不支持 HTML5 视频。</p>
+            </video>
+            <div id="current-video-title">请选择视频播放</div>
+        </div>
+        <div class="list-section">
+            <div class="list-header">视频列表</div>
+            <ul id="video-list">
+                <!-- 列表项将由 JS 动态生成 -->
+                <li style="padding: 15px; color: #666;">正在加载视频列表...</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const videoListContainer = document.getElementById('video-list');
+            const player = document.getElementById('main-player');
+            const titleDisplay = document.getElementById('current-video-title');
+            
+            // 加载 JSON 数据
+            fetch('videos.json')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('无法加载视频列表文件 videos.json');
+                    }
+                    return response.json();
+                })
+                .then(videos => {
+                    renderList(videos);
+                    if (videos.length > 0) {
+                        // 默认不自动播放，只加载第一个资源，或者等待用户点击
+                        // loadVideo(videos[0], 0); 
+                        // 为了更好的用户体验，可以加载但不播放，或者什么都不做
+                        // 这里我们选择加载第一个视频但不自动播放
+                        loadVideo(videos[0], 0, false);
+                    } else {
+                        videoListContainer.innerHTML = '<li style="padding: 15px;">暂无视频</li>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    videoListContainer.innerHTML = `<li style="padding: 15px; color: red;">加载失败: ${error.message}</li>`;
+                });
+
+            let activeIndex = -1;
+
+            function renderList(videos) {
+                videoListContainer.innerHTML = '';
+                videos.forEach((video, index) => {
+                    const li = document.createElement('li');
+                    li.className = 'video-item';
+                    li.innerHTML = `
+                        <span class="icon">🎬</span>
+                        <span class="name">${video.name}</span>
+                    `;
+                    li.onclick = () => loadVideo(video, index, true);
+                    videoListContainer.appendChild(li);
+                });
+            }
+
+            function loadVideo(video, index, autoPlay) {
+                // 更新播放器源
+                player.src = video.path;
+                titleDisplay.textContent = video.name;
+                
+                // 更新列表选中状态
+                const items = videoListContainer.getElementsByClassName('video-item');
+                if (activeIndex >= 0 && items[activeIndex]) {
+                    items[activeIndex].classList.remove('active');
+                }
+                if (items[index]) {
+                    items[index].classList.add('active');
+                }
+                activeIndex = index;
+
+                // 播放
+                if (autoPlay) {
+                    player.play().catch(e => console.log('自动播放被拦截或失败:', e));
+                }
+            }
+        });
+    </script>
+</body>
+</html>
